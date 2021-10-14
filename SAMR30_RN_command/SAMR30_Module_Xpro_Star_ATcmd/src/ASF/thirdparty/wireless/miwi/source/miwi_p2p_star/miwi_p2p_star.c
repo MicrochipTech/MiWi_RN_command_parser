@@ -2714,7 +2714,7 @@ static void MiApp_BroadcastConnectionTable(void)
         dataPtr = MiMem_Alloc(TX_BUFFER_SIZE);
         if (NULL == dataPtr)
             return;
-		dataLen = 0;			//added by Diffin, initialized offset for pointer operation.
+		dataLen = 0;			//initialized offset for pointer operation.
         dataPtr[dataLen++] = CMD_SHARE_CONNECTION_TABLE;
         dataPtr[dataLen++] = conn_size; // No of end devices in network
         dataPtr[dataLen++] = (((TX_BUFFER_SIZE-4)/4)*i);

@@ -2688,6 +2688,7 @@ static void MiApp_BroadcastConnectionTable(void)
     uint8_t* dataPtr = NULL;
     uint8_t dataLen = 0;
 
+#if 0
     if ((conn_size  * 4 ) + 4 < TX_BUFFER_SIZE)
     {
         broadcast_count = 1;
@@ -2701,12 +2702,19 @@ static void MiApp_BroadcastConnectionTable(void)
         }
 
     }
+#else
+	if(conn_size % ((TX_BUFFER_SIZE - 4) / 4))
+		broadcast_count = conn_size / ((TX_BUFFER_SIZE - 4) / 4) + 1;
+	else
+		broadcast_count = conn_size / ((TX_BUFFER_SIZE - 4) / 4);
+#endif
 
     for (i = 0 ; i < broadcast_count ; i++)
     {
         dataPtr = MiMem_Alloc(TX_BUFFER_SIZE);
         if (NULL == dataPtr)
             return;
+		dataLen = 0;			//initialized offset for pointer operation.
         dataPtr[dataLen++] = CMD_SHARE_CONNECTION_TABLE;
         dataPtr[dataLen++] = conn_size; // No of end devices in network
         dataPtr[dataLen++] = (((TX_BUFFER_SIZE-4)/4)*i);
