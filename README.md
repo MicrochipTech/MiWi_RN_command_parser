@@ -1,4 +1,27 @@
 # MiWi RN Command Parser
+<img src="images/IoT-Made-Easy-Logo.png" width=100>
+
+> "Wireless Made Easy!" - MiWi RN command parser based on SAMR30 and SAMR21 MiWi example code
+
+Devices: | **ATSAMR30 | ATSAMR21**
+
+<p align="left">
+<a href="https://www.microchip.com" target="_blank">
+<img src="images/Microchip_logo.png" width=320></a>
+</p>
+
+# ⚠ Disclaimer
+
+<p><span style="color:red"><b>
+THE SOFTWARE ARE PROVIDED "AS IS" AND GIVE A PATH FOR SELF-SUPPORT AND SELF-MAINTENANCE.</br></br>
+This repository contains unsupported example code intended to help accelerate client product development. It is not validated for production nor audited for security best-practices.</br></br>
+Note that while this repository is unsupported, Microchip welcome community contributions, and all pull-requests will be considered for inclusion into the repository.
+</span></p></b>
+
+> Interact with peers in the community at [MiWi Forum](https://www.microchip.com/forums/f507.aspx).
+
+# Overview
+
 MiWi RN command parser are demos created and modified from SAMR30 and SAMR21 MiWi example code generated from Microchip Studio ASF. Based on ASF example code, MiWi RN command parser provides a set of RN command interface for host unit (MCU or PC terminal) to control and read from MiWi unit (SAMR30 or SAMR21 with MiWi firmware). RN commands use UART as physical communication interface.
 
 The package includes below folders:
