@@ -95,19 +95,19 @@ const char StrERR2[] = "ERR\r";
 const char StrREBOOT[] = "Reboot\n\r";
 #if defined(PROTOCOL_STAR)
  #if defined(PHY_AT86RF233)
- const char StrRET_VERSION[] = "\nver cmd06fw02d\n\r";	//SAMR21 Star
- const char StrRET_VERSION2[] = "ver cmd06fw02d\r";
+ const char StrRET_VERSION[] = "\nver cmd06fw04d\n\r";	//SAMR21 Star
+ const char StrRET_VERSION2[] = "ver cmd06fw04d\r";
  #else
- const char StrRET_VERSION[] = "\nver cmd06fw02b\n\r";	//SAMR30 Star
- const char StrRET_VERSION2[] = "ver cmd06fw02b\r";
+ const char StrRET_VERSION[] = "\nver cmd06fw04b\n\r";	//SAMR30 Star
+ const char StrRET_VERSION2[] = "ver cmd06fw04b\r";
  #endif
 #else
  #if defined(PHY_AT86RF233)
- const char StrRET_VERSION[] = "\nver cmd06fw02c\n\r";	//SAMR21 P2P
- const char StrRET_VERSION2[] = "ver cmd06fw02c\r";
+ const char StrRET_VERSION[] = "\nver cmd06fw04c\n\r";	//SAMR21 P2P
+ const char StrRET_VERSION2[] = "ver cmd06fw04c\r";
  #else
- const char StrRET_VERSION[] = "\nver cmd06fw02a\n\r";	//SAMR30 P2P
- const char StrRET_VERSION2[] = "ver cmd06fw02a\r";
+ const char StrRET_VERSION[] = "\nver cmd06fw04a\n\r";	//SAMR30 P2P
+ const char StrRET_VERSION2[] = "ver cmd06fw04a\r";
  #endif
 #endif
 
@@ -1387,14 +1387,22 @@ void RNCmd_ProcessCommand( void )
 					{
 						if(!data_size)	//if r2=0, count r3 bytes and use counted number
 						{
-							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, strlen(ptag4), ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY							
+							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, strlen(ptag4), ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, strlen(ptag4), ptag4, msghandledemo++, true, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
 						}
 						else
 						{
-							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, data_size, ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY								
+							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, data_size, ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+							if(MiApp_SendData(LONG_ADDR_LEN, connectionTable[index].Address, data_size, ptag4, msghandledemo++, true, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
@@ -1408,14 +1416,22 @@ void RNCmd_ProcessCommand( void )
 					{
 						if(!data_size)	//if r2=0, count r3 bytes and use counted number
 						{
-							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, strlen(ptag4), ptag4, msghandledemo++, false, dataConfcb))
+#ifdef ENABLE_SECURITY							
+							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, strlen(ptag4), ptag4, msghandledemo++, false, true, dataConfcb))
+#else
+							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, strlen(ptag4), ptag4, msghandledemo++, false, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
 						}
 						else
 						{
-							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, data_size, ptag4, msghandledemo++, false, dataConfcb))
+#ifdef ENABLE_SECURITY								
+							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, data_size, ptag4, msghandledemo++, false, true, dataConfcb))
+#else
+							if(MiApp_SendData(SHORT_ADDR_LEN, (uint8_t *)&broadcastAddress, data_size, ptag4, msghandledemo++, false, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
@@ -1440,14 +1456,22 @@ void RNCmd_ProcessCommand( void )
 						desShortAddress[2] = str2byte(pStr1);
 						if(!data_size)	//if r2=0, count r3 bytes and use counted number
 						{
-							if(MiApp_SendData(3, desShortAddress, strlen(ptag4), ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY							
+							if(MiApp_SendData(3, desShortAddress, strlen(ptag4), ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+							if(MiApp_SendData(3, desShortAddress, strlen(ptag4), ptag4, msghandledemo++, true, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
 						}
 						else
 						{
-							if(MiApp_SendData(3, desShortAddress, data_size, ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY								
+							if(MiApp_SendData(3, desShortAddress, data_size, ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+							if(MiApp_SendData(3, desShortAddress, data_size, ptag4, msghandledemo++, true, false, dataConfcb))
+#endif							
 								RNCmd_ResponseAOK();
 							else
 								RNCmd_ResponseERR();
@@ -1482,14 +1506,22 @@ void RNCmd_ProcessCommand( void )
 					destLongAddress[7] = str2byte(pStr1);
 					if(!data_size)	//if r2=0, count r3 bytes and use counted number
 					{
-						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, strlen(ptag4), ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY						
+						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, strlen(ptag4), ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, strlen(ptag4), ptag4, msghandledemo++, true, false, dataConfcb))
+#endif						
 							RNCmd_ResponseAOK();
 						else
 							RNCmd_ResponseERR();
 					}
 					else
 					{
-						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, data_size, ptag4, msghandledemo++, true, dataConfcb))
+#ifdef ENABLE_SECURITY						
+						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, data_size, ptag4, msghandledemo++, true, true, dataConfcb))
+#else
+						if(MiApp_SendData(LONG_ADDR_LEN, destLongAddress, data_size, ptag4, msghandledemo++, true, false, dataConfcb))
+#endif						
 							RNCmd_ResponseAOK();
 						else
 							RNCmd_ResponseERR();

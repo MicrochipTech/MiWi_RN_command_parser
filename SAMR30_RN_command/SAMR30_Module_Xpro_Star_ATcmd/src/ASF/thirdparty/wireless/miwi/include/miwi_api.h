@@ -3,7 +3,7 @@
 *
 * \brief Application Program Interface for MiWi Protocols.
 *
-* Copyright (c) 2018 - 2019 Microchip Technology Inc. and its subsidiaries. 
+* Copyright (c) 2018 - 2020 Microchip Technology Inc. and its subsidiaries. 
 *
 * \asf_license_start
 *
@@ -44,7 +44,7 @@
 #endif
 
 #define MIWI_MAJOR_VERSION    '6'
-#define MIWI_MINOR_VERSION    '4'
+#define MIWI_MINOR_VERSION    '7'
 
 #define INPUT
 #define OUTPUT
@@ -421,6 +421,8 @@ typedef struct __defaultParametersRomOrRam
 	CoordHopCount_t *coordinatorHopCount;
 	RebroadcastTable_t *rebroadcastTable;
 
+	uint32_t indirectDataWaitInterval;
+
 	uint16_t keepAliveCoordSendInterval;
 	uint16_t keepAliveCoordTimeoutSec;
 
@@ -432,8 +434,6 @@ typedef struct __defaultParametersRomOrRam
 
 	uint8_t routeUpdateInterval;
 	uint8_t routeReqWaitInterval;
-
-	uint8_t indirectDataWaitInterval;
 
 	uint8_t rebroadcastTableSize;
 	uint8_t rebroadcastTimeout;
@@ -451,6 +451,7 @@ typedef struct __defaultParametersRomOrRam
 	uint8_t edLinkFailureAttempts;
 	uint8_t connRespWaitInSec;
 	uint8_t frameRetry;
+	uint8_t joinWish;
 #ifndef PAN_COORDINATOR
 	searchConf_t* searchConfMem;
 	uint8_t maxNoOfBeacons;
@@ -803,7 +804,7 @@ typedef void (*DataConf_callback_t)(uint8_t msgConfHandle, miwi_status_t status,
 /************************************************************************************
 * Function:
 * bool MiApp_SendData(uint8_t addr_len, uint8_t *addr, uint8_t msglen, uint8_t *msgpointer,
-uint8_t msghandle, DataConf_callback_t ConfCallback);
+uint8_t msghandle, bool secEnabled, DataConf_callback_t ConfCallback);
 *
 * Summary:
 *      This function unicast a message in the msgpointer to the device with DestinationAddress
@@ -817,12 +818,14 @@ uint8_t msghandle, DataConf_callback_t ConfCallback);
 *      Protocol initialization has been done.
 *
 * Parameters:
-*      uint8_t addr_len - destionation address length
+*      uint8_t addr_len - destination address length
 *      uint8_t *addr  - destionation address
 *      uint8_t msglen - length of the message
 *      uint8_t *msgpointer - message/frame pointer
 *      uint8_t msghandle - message handle
 *      bool ackReq - set to receive network level ack (Note- Discarded for broadcast data)
+*      bool secEnabled - Secure the the message (Note - Discarded for Mesh protocol because Mesh network 
+*												 security (Enable/disable) is based on MESH_SECURITY Macro value)
 *      DataConf_callback_t ConfCallback - The callback routine which will be called upon
 *                                               the initiated data procedure is performed
 *
@@ -833,7 +836,7 @@ uint8_t msghandle, DataConf_callback_t ConfCallback);
 *      <code>
 *      // Secure and then broadcast the message stored in msgpointer to the permanent address
 *      // specified in the input parameter.
-*      MiApp_SendData(SHORT_ADDR_LEN, 0x0004, len, frameptr,1, callback);
+*      MiApp_SendData(SHORT_ADDR_LEN, 0x0004, len, frameptr,1,1, callback);
 *      </code>
 *
 * Remarks:
@@ -841,7 +844,8 @@ uint8_t msghandle, DataConf_callback_t ConfCallback);
 *
 *****************************************************************************************/
 bool MiApp_SendData(uint8_t addr_len, uint8_t *addr, uint8_t msglen, uint8_t *msgpointer, uint8_t msghandle,
-bool ackReq, DataConf_callback_t ConfCallback);
+bool ackReq, bool secEnabled, DataConf_callback_t ConfCallback);
+
 
 #define BROADCAST_TO_ALL            0x01
 #define MULTICAST_TO_COORDINATORS   0x02
@@ -1362,7 +1366,7 @@ uint16_t MiApp_MeshGetNextHopAddr(uint16_t destAddress);
 *      <code>
 *      // Secure and then broadcast the message stored in msgpointer to the permanent address
 *      // specified in the input parameter.
-*      MiApp_SendData(SHORT_ADDR_LEN, 0x0004, len, frameptr,1, callback);
+*      MiApp_SendData(SHORT_ADDR_LEN, 0x0004, len, frameptr,1, 1, callback);
 *      </code>
 *
 * Remarks:

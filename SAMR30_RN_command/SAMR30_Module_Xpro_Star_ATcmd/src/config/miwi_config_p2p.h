@@ -63,7 +63,7 @@
         // can try to establish a connection. Once the retry times are exhausted
         // control will be return to application layer to decide what to do next
         /*********************************************************************/
-        #define CONNECTION_RETRY_TIMES          3
+        #define CONNECTION_RETRY_TIMES          5//3	//WSGA-13104, increase connection retry times if end device number is large.
     
     
         /*********************************************************************/

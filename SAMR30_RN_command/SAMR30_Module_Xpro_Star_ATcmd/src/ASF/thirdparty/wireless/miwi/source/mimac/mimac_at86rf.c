@@ -285,7 +285,7 @@ uint8_t FrameControl)
 // Validates the Received mic with the mic computed from data packet decryption.
 bool validate_mic(void)
 {
-	if (final_mic_value[0] != received_mic_values[0] || final_mic_value[1] != received_mic_values[1])
+	if (final_mic_value[0] != received_mic_values[0] || final_mic_value[1] != received_mic_values[1] || final_mic_value[2] != received_mic_values[2] || final_mic_value[3] != received_mic_values[3])
 	{
 		return false;
 	}
@@ -645,9 +645,24 @@ bool MiMAC_SendPacket( MAC_TRANS_PARAM transParam,
 	uint8_t frameControl = 0;
 	PHY_DataReq_t phyDataRequest;
 
-	#ifndef TARGET_SMALL
-		bool IntraPAN;
-	#endif
+#ifndef TARGET_SMALL
+	bool IntraPAN;
+#endif
+
+
+#ifdef ENABLE_SECURITY
+#if defined(PROTOCOL_STAR)
+    
+	/*  Star network devices uses CMD_FORWARD_DATA to send packet to an another enddevice.
+		In such cases, PANC is having the encrypted payload in the nwk layer queue 
+		which inturn fails the Software acknowledgment to Source device. 
+		Introducing macPayloadTemp buffer for having encrypted payload of Star device 
+		so that upper layer queue will have unencrypted data. */
+	uint8_t macPayloadTemp[128];
+	/*Copy the MAC payload for Encryption Operation */
+	memcpy(macPayloadTemp, MACPayload, MACPayloadLen);
+#endif
+#endif
 
     if (transParam.flags.bits.broadcast)
     {
@@ -726,7 +741,12 @@ bool MiMAC_SendPacket( MAC_TRANS_PARAM transParam,
     if (transParam.flags.bits.secEn)
     {
         frameControl |= 0x08;
+#if defined(PROTOCOL_STAR)
+		DataEncrypt(macPayloadTemp, &MACPayloadLen, OutgoingFrameCounter, frameControl);
+#else
 		DataEncrypt(MACPayload, &MACPayloadLen, OutgoingFrameCounter, frameControl);
+#endif
+
     }
 #endif
 
@@ -847,16 +867,26 @@ if (transParam.flags.bits.secEn)
 		packet[loc++] = MACPayload[i];
     }
 #else
+
+#if defined(PROTOCOL_STAR)
     // write the payload
     for (i = 0; i < MACPayloadLen; i++) // MIC added
     {
-	    packet[loc++] = MACPayload[i];
+	    packet[loc++] = macPayloadTemp[i];
     }
+#else
+	 // write the payload
+	 for (i = 0; i < MACPayloadLen; i++) // MIC added
+	 {
+		 packet[loc++] = MACPayload[i];
+	 }
+#endif
+
 	packet[loc++] = final_mic_value[0];
 	packet[loc++] = final_mic_value[1];
 	packet[loc++] = final_mic_value[2];
 	packet[loc++] = final_mic_value[3];
-	#endif
+#endif
 
     // set the trigger value
     if (transParam.flags.bits.ackReq && transParam.flags.bits.broadcast == false)
@@ -1173,31 +1203,32 @@ bool MiMAC_ReceivedPacket(void)
 					break;
 				}
 			}
-
-			if (i < CONNECTION_SIZE)
-			{
-				if (IncomingFrameCounter[i].Val > FrameCounter.Val)
-				{
-					MiMAC_DiscardPacket();
-					return false;
-				} else
-				{
-					IncomingFrameCounter[i].Val = FrameCounter.Val;
-				}
-			}
-
-
+			
+            // drop the frame in case of replay
+            if (i < CONNECTION_SIZE && IncomingFrameCounter[i].Val >= FrameCounter.Val)
+            {
+                MiMAC_DiscardPacket();
+                return false;
+            }
+			
 			MACRxPacket.PayloadLen -= 5;  // used to 5 for frame counter now -4 also added for MIC integrity
 
 			received_mic_values[0] = MACRxPacket.Payload[MACRxPacket.PayloadLen+1];
 			received_mic_values[1] = MACRxPacket.Payload[MACRxPacket.PayloadLen+2];
 			received_mic_values[2] = MACRxPacket.Payload[MACRxPacket.PayloadLen+3];
 			received_mic_values[3] = MACRxPacket.Payload[MACRxPacket.PayloadLen+4];
+					
  					//MACRxPacket.PayloadLen -= 4;
 			if (false == DataDecrypt(&(MACRxPacket.Payload[5]), &(MACRxPacket.PayloadLen), MACRxPacket.SourceAddress, FrameCounter, RxBuffer[BankIndex].Payload[0]))
 			{
 				MiMAC_DiscardPacket();
 				return false;
+			}
+			
+			// update the frame counter
+            if (i < CONNECTION_SIZE) 
+			{
+				IncomingFrameCounter[i].Val = FrameCounter.Val;
 			}
 
 			// remove the security header from the payload

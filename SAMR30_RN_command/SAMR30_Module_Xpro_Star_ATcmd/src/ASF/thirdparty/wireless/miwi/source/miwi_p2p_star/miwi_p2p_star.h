@@ -163,7 +163,7 @@ typedef union
 
 #if defined(PROTOCOL_STAR)
 #define SHARE_PEER_DEVICE_INFO_TIMEOUT      15
-#define LINK_STATUS_TIMEOUT                 15
+#define LINK_STATUS_TIMEOUT                 20//15 WSGA-13076 optimization
 #define SW_ACK_TIMEOUT                      2
 // every 1 minute / 60 seconds the stack will evaluate the inactive end nodes
 #define FIND_INACTIVE_DEVICE_TIMEOUT        60
@@ -211,6 +211,7 @@ typedef struct _DataFrame_t
 	uint8_t msghandle;
 	uint8_t msgLength;
 	uint8_t msg[MAX_PAYLOAD + 4]; // +4 to support packet forward header
+	bool secEnabled;
 } DataFrame_t;
 
 typedef struct _P2PStarDataFrame_t

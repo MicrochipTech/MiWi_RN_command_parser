@@ -41,6 +41,6 @@
 
 #define MCU_SOC_NAME        "ATSAMR30E18A"
 
-#define AT86RFX_SPI_BAUDRATE             4000000UL
+#define AT86RFX_SPI_BAUDRATE             2000000UL//4000000UL
 
 #endif /* CONF_BOARD_H_INCLUDED */

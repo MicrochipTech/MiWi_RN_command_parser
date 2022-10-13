@@ -225,10 +225,6 @@ void PHY_Init(void)
 	(1 << IRQ_MASK_MODE));
 
 #ifdef MIWI_RN_CMD
-	phyWriteRegister(ANT_DIV_REG, (1 << ANT_DIV_EN) | (1 << ANT_EXT_SW_EN) );	//enable antenna diversity, enable RF switch control
-	//phyWriteRegister(ANT_DIV_REG, (1 << ANT_EXT_SW_EN) | 0x01);	//disable antenna diversity, enable RF switch control, enable Antenna 0(DIG1 = L, DIG2 = H). Tested thsi is on board antenna.
-	//phyWriteRegister(ANT_DIV_REG, (1 << ANT_EXT_SW_EN) | 0x02);	//disable antenna diversity, enable RF switch control, enable Antenna 1(DIG1 = H, DIG2 = L). Tested this is external antenna.
-	
 	phyWriteRegister(TRX_CTRL_2_REG, (1 << RX_SAFE_MODE) | phy_mod_user_setting);
 	switch(phy_mod_user_setting)
 	{
@@ -242,10 +238,10 @@ void PHY_Init(void)
 		case OQPSK_RC_1000_SCR_ON_RN:
 		case OQPSK_RC_1000_SCR_OFF_RN:
 			phyWriteRegister(RF_CTRL_0_REG, 0x02);
-			break;
+		break;
 		default:
 			phyWriteRegister(RF_CTRL_0_REG, 0x03);
-			break;
+		break;
 	}
 	phyWriteRegister(PHY_TX_PWR_REG, phy_txpwr_user_setting);
 #else
@@ -255,7 +251,10 @@ void PHY_Init(void)
 	phyWriteRegister(RF_CTRL_0_REG, PWR_BPSK_OFFSET);
 	/* Transmit power 3dbm for BPSK-40-ALT*/
 	phyWriteRegister(PHY_TX_PWR_REG, TX_PWR);
-#endif
+#endif	
+	
+	//Enable Antenna Diversity
+	phyWriteRegister(ANT_DIV_REG, ((1 << ANT_DIV_EN) | (1 << ANT_EXT_SW_EN)));
 
 #if (defined(OTAU_ENABLED) && defined(OTAU_PHY_MODE))
 	/* Interrupt Handler Initialization */
@@ -339,6 +338,12 @@ void PHY_SetTxPower(uint8_t txPower)
 // Radio Sleep
 void PHY_Sleep(void)
 {
+	
+	uint8_t ant_div = phyReadRegister(ANT_DIV_REG);
+	ant_div &= ~(1 << ANT_EXT_SW_EN);
+	
+	phyWriteRegister(ANT_DIV_REG, ant_div);
+	
 	if (PHY_STATE_SLEEP != phyState)
 	{
 		phyTrxSetState(TRX_CMD_TRX_OFF);
@@ -357,6 +362,9 @@ void PHY_Wakeup(void)
 		TRX_SLP_TR_LOW();
 	 	phySetRxState();
 	 	phyState = PHY_STATE_IDLE;
+		 
+		//Enable External Antenna Switch after wakeup from Sleep
+		phyWriteRegister(ANT_DIV_REG, (phyReadRegister(ANT_DIV_REG) | (1 << ANT_EXT_SW_EN)));
 	}
 }
 
@@ -393,6 +401,12 @@ uint16_t PHY_RandomReq(void)
 *****************************************************************************/
 void PHY_EncryptReq(uint8_t *text, uint8_t *key)
 {
+	/* Make sure Transceiver is wakeup  before doing the Encryption */
+    if (phyState == PHY_STATE_SLEEP)
+    {
+		PHY_Wakeup();
+    }
+		
 	sal_aes_setup(key, AES_MODE_ECB, AES_DIR_ENCRYPT);
 	#if (SAL_TYPE == AT86RF2xx)
 	sal_aes_wrrd(text, NULL);
@@ -404,6 +418,11 @@ void PHY_EncryptReq(uint8_t *text, uint8_t *key)
 
 void PHY_EncryptReqCBC(uint8_t *text, uint8_t *key)
 {
+	/* Make sure Transceiver is wakeup  before doing the Encryption */
+	if (phyState == PHY_STATE_SLEEP)
+	{
+		PHY_Wakeup();
+	}
 	sal_aes_setup(key, AES_MODE_CBC, AES_DIR_ENCRYPT);
 	#if (SAL_TYPE == AT86RF2xx)
 	sal_aes_wrrd(text, NULL);
@@ -418,6 +437,11 @@ void PHY_EncryptReqCBC(uint8_t *text, uint8_t *key)
 // Decrypt Block
 void PHY_DecryptReq(uint8_t *text, uint8_t *key)
 {
+	/* Make sure Transceiver is wakeup  before doing the Encryption */
+	if (phyState == PHY_STATE_SLEEP)
+	{
+		PHY_Wakeup();
+	}
 	sal_aes_setup(key, AES_MODE_ECB, AES_DIR_DECRYPT);
 	sal_aes_wrrd(text, NULL);
 	sal_aes_read(text);
@@ -493,7 +517,6 @@ static void phyWaitState(uint8_t state)
 static void phySetChannel(void)
 {
 	uint8_t reg;
-
 #ifdef MIWI_RN_CMD
 	phyModulation = phy_mod_user_setting & 0x3C;	//ignore last 2bits, it is used to pick up correct RSSI base value.
 #else
@@ -506,7 +529,6 @@ static void phySetChannel(void)
 		phyModulation = PHY_MOD_BPSK40_CHAN_N;
 	}
 #endif
-
 	phyWriteRegister(CC_CTRL_1_REG, phyBand);
 
 	if (0 == phyBand) {
@@ -780,6 +802,13 @@ void PHY_TaskHandler(void)
                 int8_t rssi;
 
                 rssi = (int8_t)phyReadRegister(PHY_ED_LEVEL_REG);
+				/* Wait till TRX come to RX_AACK_ON state after packet reception */
+				phyWaitState(TRX_STATUS_RX_AACK_ON);
+				
+				/* Change the TRX state to TRX_OFF when reading the Frame buffer */
+				phyTrxSetState(TRX_CMD_TRX_OFF);
+				phyWaitState(TRX_CMD_TRX_OFF);
+				
                 trx_frame_read(&size, 1);
 
 				if(size <= MAX_PSDU)
@@ -796,6 +825,9 @@ void PHY_TaskHandler(void)
 						RxBuffer[RxBank].Payload[RxBuffer[RxBank].PayloadLen - 1] = rssi + phyRssiBaseVal();
 					}
 				}
+				
+				/* Change the TRX state to RX_AACK_ON after reading the frame buffer */
+				phySetRxState();
 				phyWaitState(TRX_STATUS_RX_AACK_ON);
 			}
 		}
